@@ -50,4 +50,4 @@ jobs:
       - name: Deploy function
         if: steps.get_namespace.outputs.namespace != ''
         run: |
-          doctl serverless deploy src/
+          doctl serverless deploy src/ --remote-build
