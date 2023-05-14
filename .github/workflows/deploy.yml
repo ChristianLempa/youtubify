@@ -40,13 +40,13 @@ jobs:
             echo "name=namespace_id=youtubify-dev-1" >> GITHUB_OUTPUT
           fi
 
-      # connect to the correct serverless namespace
+      # connect to the correct serverless namespace, if namespace_id is not empty
       - name: Connect to the correct serverless namespace
+        if: steps.get_namespace_id.outputs.namespace_id != ''
         run: |
           doctl serverless connect ${{ steps.get_namespace_id.outputs.namespace_id }}
 
       # deploy function to digitalocean
       - name: Deploy function
-        if: steps.get_function_id.outputs.function_id != ''
         run: |
           doctl serverless deploy src/
