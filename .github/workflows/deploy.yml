@@ -29,24 +29,25 @@ jobs:
           doctl serverless install
 
       # get the function namespace id, based on the branch
-      #   - main: youtubify-prod-1
-      #   - development: youtubify-dev-1
+      #   - main: namespace=youtubify-prod-1
+      #   - development: namespace=youtubify-dev-1
       - name: Get the function namespace id for the current branch
-        id: get_namespace_id
+        id: get_namespace
         run: |
-          if [ $GITHUB_REF = 'refs/heads/main' ]; then
-            echo "name=namespace_id=youtubify-prod-1" >> GITHUB_OUTPUT
-          elif [ $GITHUB_REF = 'refs/heads/development' ]; then
-            echo "name=namespace_id=youtubify-dev-1" >> GITHUB_OUTPUT
+          if [ ${{ github.ref }} = 'refs/heads/main' ]; then
+            echo "name=namespace=youtubify-prod-1" >> $GITHUB_OUTPUT
+          elif [ ${{ github.ref }} = 'refs/heads/development' ]; then
+            echo "name=namespace=youtubify-dev-1" >> $GITHUB_OUTPUT
           fi
 
-      # connect to the correct serverless namespace, if namespace_id is not empty
+      # connect to the correct serverless namespace, if namespace is not empty
       - name: Connect to the correct serverless namespace
-        if: steps.get_namespace_id.outputs.namespace_id != ''
+        if: steps.get_namespace.outputs.namespace != ''
         run: |
-          doctl serverless connect ${{ steps.get_namespace_id.outputs.namespace_id }}
+          doctl serverless connect ${{ steps.get_namespace.outputs.namespace }}
 
       # deploy function to digitalocean
       - name: Deploy function
+        if: steps.get_namespace.outputs.namespace != ''
         run: |
           doctl serverless deploy src/
