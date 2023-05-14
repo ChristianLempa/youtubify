@@ -1,0 +1,53 @@
+name: Deploy to DigitalOcean Functions
+
+on:
+  push:
+    branches:
+      - main
+      - development
+  pull_request:
+    branches:
+      - main
+      - development
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      # install digitalocean cli
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      # install digitalocean serverless plugin
+      - name: Install doctl serverless plugin
+        run: |
+          doctl serverless install
+
+      # get the function namespace id, based on the branch
+      #   - main: namespace=youtubify-prod-1
+      #   - development: namespace=youtubify-dev-1
+      - name: Get the function namespace id for the current branch
+        id: get_namespace
+        run: |
+          if [ ${{ github.ref }} = 'refs/heads/main' ]; then
+            echo "namespace=youtubify-prod-1" >> $GITHUB_OUTPUT
+          elif [ ${{ github.ref }} = 'refs/heads/development' ]; then
+            echo "namespace=youtubify-dev-1" >> $GITHUB_OUTPUT
+          fi
+
+      # connect to the correct serverless namespace, if namespace is not empty
+      - name: Connect to the correct serverless namespace
+        if: steps.get_namespace.outputs.namespace != ''
+        run: |
+          doctl serverless connect ${{ steps.get_namespace.outputs.namespace }}
+
+      # deploy function to digitalocean
+      - name: Deploy function
+        if: steps.get_namespace.outputs.namespace != ''
+        run: |
+          doctl serverless deploy src/ --remote-build
